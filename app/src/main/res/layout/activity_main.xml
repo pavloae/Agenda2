@@ -6,57 +6,54 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <LinearLayout
+    <RelativeLayout
+
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/textView"
-            android:layout_width="match_parent"
-            android:layout_height="64dp"
-            android:text="Hello World!"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <EditText
-            android:id="@+id/editText"
-            android:layout_width="match_parent"
-            android:layout_height="64dp"
-            android:text="Hello World!"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <CalendarView
-            android:layout_width="match_parent"
-            android:layout_height="256dp">
-
-        </CalendarView>
-
         <LinearLayout
+            android:id="@+id/groupLayout"
+            android:orientation="horizontal"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:layout_height="wrap_content">
+
+            <ImageView
+                android:id="@+id/groupImage"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:contentDescription="@string/groupimage" />
+
+            <TextView
+                android:layout_weight="1"
+                android:id="@+id/groupName"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:paddingLeft="8dp"
+                android:textSize="18sp"
+                android:hint="@string/prompt_group_name"
+                android:paddingStart="8dp"
+                tools:ignore="RtlSymmetry" />
 
             <Button
-                android:id="@+id/buttonRead"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Leer" />
-
-            <Button
-                android:id="@+id/buttonWrite"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Escribir" />
+                android:id="@+id/groupButton"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                android:layout_margin="16dp"
+                android:background="@drawable/group"/>
 
         </LinearLayout>
 
-    </LinearLayout>
+        <com.nablanet.agenda2.views.CustomCalendarView
+            android:id="@+id/calendarView"
+            android:layout_width="match_parent"
+            android:layout_height="256dp"
+            android:layout_below="@id/groupLayout">
+
+        </com.nablanet.agenda2.views.CustomCalendarView>
+
+    </RelativeLayout>
 
 
 
