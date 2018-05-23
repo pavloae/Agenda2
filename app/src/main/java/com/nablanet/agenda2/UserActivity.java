@@ -57,6 +57,7 @@ public class UserActivity extends AppCompatActivity {
                 && firebaseAuth.getCurrentUser().getPhoneNumber() != null)
             phoneNumber.setText(firebaseAuth.getCurrentUser().getPhoneNumber());
 
+
         viewModel = ViewModelProviders.of(this).get(AgendaDBViewModel.class);
 
         viewModel.getOwnUser().observe(this, new FirebaseObserver() {
@@ -141,6 +142,10 @@ public class UserActivity extends AppCompatActivity {
                 null, //TODO: Implementar la imagen
                 shareNumber.isChecked()
         );
+
+        if (phone == null)
+            phone = new Phone(FirebaseAuth.getInstance().getUid(), false);
+
         phone.share = user.share;
         viewModel.updateOwnUser(user);
         viewModel.updateOwnPhone(phone);

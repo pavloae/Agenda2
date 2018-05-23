@@ -81,7 +81,7 @@ public class ContactsAdapter extends RecyclerView.Adapter<ItemHolder> {
 
         CardView cardView;
         ImageView imageView;
-        TextView uId, uName, uComment, cName, cPhone;
+        TextView uName, cName, cPhone;
 
         User user;
 
@@ -92,11 +92,9 @@ public class ContactsAdapter extends RecyclerView.Adapter<ItemHolder> {
             cardView = view.findViewById(R.id.card_view_compra);
             imageView = view.findViewById(R.id.contact_image);
 
-            uId = view.findViewById(R.id.u_id);
-            uName = view.findViewById(R.id.u_name);
-            uComment = view.findViewById(R.id.u_comment);
             cName = view.findViewById(R.id.c_name);
             cPhone = view.findViewById(R.id.c_phone);
+            uName = view.findViewById(R.id.u_name);
 
             view.setOnClickListener(this);
             view.setOnLongClickListener(this);
@@ -107,11 +105,9 @@ public class ContactsAdapter extends RecyclerView.Adapter<ItemHolder> {
 
             this.user = user;
 
-            uId.setText(String.format("uId: %s", user.uid));
-            uName.setText(String.format("uName: %s", user.name));
-            uComment.setText(String.format("uComm: %s", user.comment));
-            cName.setText(String.format("cName: %s", user.contactValues.name));
-            cPhone.setText(String.format("cPhone: %s", user.contactValues.phone));
+            cName.setText(user.contactValues.name);
+            cPhone.setText(user.contactValues.phone);
+            uName.setText(String.format("~ %s", user.name));
 
 
         }

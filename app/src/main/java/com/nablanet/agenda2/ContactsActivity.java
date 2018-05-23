@@ -5,13 +5,10 @@ import android.arch.lifecycle.ViewModelProviders;
 import android.content.ContentResolver;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -20,17 +17,23 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 
+import android.provider.ContactsContract.Contacts;
+import android.provider.ContactsContract.CommonDataKinds.Phone;
+
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
+import com.google.firebase.database.ValueEventListener;
 import com.nablanet.agenda2.adapters.ContactsAdapter;
 import com.nablanet.agenda2.pojos.Contact;
 import com.nablanet.agenda2.pojos.User;
 import com.nablanet.agenda2.viewmodel.AgendaDBViewModel;
-import com.nablanet.agenda2.viewmodel.FirebaseQueryLiveData;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 import io.michaelrocks.libphonenumber.android.NumberParseException;
 import io.michaelrocks.libphonenumber.android.PhoneNumberUtil;
@@ -42,19 +45,18 @@ public class ContactsActivity extends AppCompatActivity {
 
     public static final String TAG = "ContactsActivity";
 
-    AgendaDBViewModel viewModel;
+    private static final int REQUEST_READ_CONTACTS = 0;
 
-    private RecyclerView recyclerView;
+    AgendaDBViewModel viewModel;
     public ContactsAdapter contactsAdapter;
 
-    HashMap<String, User> contacts;
 
-    private static final int REQUEST_READ_CONTACTS = 444;
+    HashMap<String, String> localContacts; // <phoneNumber, name>
+    HashMap<String, Object> remoteContacts;
+
+    int counter;
     private ProgressDialog pDialog;
     private Handler updateBarHandler;
-    ArrayList<String> contactList;
-    Cursor cursor;
-    int counter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,7 +68,7 @@ public class ContactsActivity extends AppCompatActivity {
         if (getSupportActionBar() != null)
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        recyclerView = findViewById(R.id.recyclerViewContacts);
+        RecyclerView recyclerView = findViewById(R.id.recyclerViewContacts);
         recyclerView.setHasFixedSize(true);
         recyclerView.setItemAnimator(null);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -76,62 +78,14 @@ public class ContactsActivity extends AppCompatActivity {
         recyclerView.setAdapter(contactsAdapter);
 
         viewModel = ViewModelProviders.of(this).get(AgendaDBViewModel.class);
-        viewModel.getOwnContacts().observe(this, new FirebaseQueryLiveData.FirebaseObserver() {
-            @Override
-            public void onChanged(@Nullable DataSnapshot dataSnapshot) {
 
-                if (dataSnapshot == null || dataSnapshot.getChildren() == null)
-                    return;
-
-                if (contacts == null)
-                    contacts = new HashMap<>();
-
-                Log.d(TAG, dataSnapshot.getValue().toString());
-
-                Contact contact;
-                User user;
-                for (DataSnapshot dataSnapShotChild : dataSnapshot.getChildren()){
-
-                    Log.d(TAG, "Child" + dataSnapShotChild.getKey() + " : " + dataSnapShotChild.getValue().toString());
-
-                    if ((contact = dataSnapShotChild.getValue(Contact.class)) != null){
-                        user = new User(contact);
-                        user.uid = dataSnapShotChild.getKey();
-                        contacts.put(
-                                dataSnapShotChild.getKey(),
-                                new User(contact)
-                        );
-                        contactsAdapter.addContact(user);
-                    }
-                }
-
-
-
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                Log.d(TAG, "Operacion cancelada: " + databaseError.toString());
-            }
-        });
+        loadRemoteContacts();
 
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
-
             @Override
             public void onClick(View view) {
-
-                startDialog();
-
-                // Since reading contacts takes more time, let's run it on a separate thread.
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        updateContacts();
-                    }
-                }).start();
-
-
+                startSync();
             }
         });
 
@@ -143,99 +97,210 @@ public class ContactsActivity extends AppCompatActivity {
                 grantResults.length == 1 &&
                 grantResults[0] == PackageManager.PERMISSION_GRANTED
                 )
-                updateContacts();
+                startSync();
     }
 
-    private void startDialog() {
-        pDialog = new ProgressDialog(ContactsActivity.this);
+    private void loadRemoteContacts() {
+
+        String ownUid = FirebaseAuth.getInstance().getUid();
+
+        if (ownUid == null)
+            return;
+
+        final Query query = FirebaseDatabase.getInstance().getReference("contacts").child(ownUid);
+
+        query.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if (dataSnapshot == null || dataSnapshot.getChildren() == null)
+                    return;
+
+                Contact contact;
+                User user;
+
+                ArrayList<User> databaseContacts = new ArrayList<>();
+                for (DataSnapshot dataSnapShotChild : dataSnapshot.getChildren()){
+                    if ((contact = dataSnapShotChild.getValue(Contact.class)) != null){
+                        user = new User(contact);
+                        user.uid = dataSnapShotChild.getKey();
+                        loadUserProfile(user);
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Log.e(TAG, "Error on " + query + " : " + databaseError.toString());
+            }
+        });
+
+    }
+
+    private void loadUserProfile(@NonNull final User user) {
+
+        if (user.uid == null)
+            return;
+
+        DatabaseReference reference = FirebaseDatabase.getInstance().getReference("users");
+
+        reference.child(user.uid).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if (dataSnapshot == null || dataSnapshot.getChildren() == null)
+                    return;
+
+                user.name = dataSnapshot.child("name").getValue(String.class);
+                contactsAdapter.addContact(user);
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+
+        });
+
+
+
+
+
+
+    }
+
+    private void startSync() {
+
+        pDialog = new ProgressDialog(this);
         pDialog.setMessage("Actualizando contactos...");
         pDialog.setCancelable(false);
         pDialog.show();
         updateBarHandler = new Handler();
+
+        // Since reading databaseContacts takes more time, let's run it on a separate thread.
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                // Cargamos los contactos locales
+                localContacts = getAllLocalContacts();
+
+                updateBarHandler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        pDialog.cancel();
+
+                        // Buscamos los teléfonos en el servidor
+                        queryPhonesNumbers();
+
+                    }
+                }, 500);
+            }
+        }).start();
+
     }
 
-    public void updateContacts() {
+    private HashMap<String, String> getAllLocalContacts() {
 
         if (!mayRequestContacts())
-            return;
-
-        Uri CONTENT_URI = ContactsContract.Contacts.CONTENT_URI;
-        String _ID = ContactsContract.Contacts._ID;
-        String DISPLAY_NAME = ContactsContract.Contacts.DISPLAY_NAME;
-        String HAS_PHONE_NUMBER = ContactsContract.Contacts.HAS_PHONE_NUMBER;
-        Uri PhoneCONTENT_URI = ContactsContract.CommonDataKinds.Phone.CONTENT_URI;
-        String Phone_CONTACT_ID = ContactsContract.CommonDataKinds.Phone.CONTACT_ID;
-        String NUMBER = ContactsContract.CommonDataKinds.Phone.NUMBER;
-
-        String[] mProjection = new String[]
-                {
-                        _ID,
-                        DISPLAY_NAME,
-                        HAS_PHONE_NUMBER
-                };
-
-        String selection = "has_phone_number != '0'";
+            return null;
 
         ContentResolver contentResolver = getContentResolver();
-        cursor = contentResolver.query(
-                CONTENT_URI,
-                mProjection,
-                selection,
-                null,
+
+        // Pedimos todos los contactos locales que tienen número de teléfono
+        final Cursor contactsCursor = contentResolver.query(
+                Contacts.CONTENT_URI,
+                new String[]{Contacts._ID, Contacts.DISPLAY_NAME},
+                String.format("%s != ?", Contacts.HAS_PHONE_NUMBER),
+                new String[]{"0"},
                 null
         );
 
-        if (cursor == null || cursor.getCount() == 0)
-            return;
+        HashMap<String, String> localContacts = new HashMap<>();
+        if (contactsCursor != null) {
 
-        // Iterate every contactValues in the phone
-        counter = 0;
+            counter = 0;
+            while (contactsCursor.moveToNext()) {
+                updateBarHandler.post(new Runnable() {
+                    public void run() {
+                        pDialog.setMessage("Verificando contacto: " + counter++ + "/" + contactsCursor.getCount());
+                    }
+                });
 
-        HashMap<String, String> mapPhoneNumber = new HashMap<>();
+                String _id = contactsCursor.getString(contactsCursor.getColumnIndex(Contacts._ID));
+                String name = contactsCursor.getString(contactsCursor.getColumnIndex(Contacts.DISPLAY_NAME));
 
-        String phoneNumber;
-        while (cursor.moveToNext()) {
+                // Pedimos todos los teléfonos asociados a este contacto {_id}
+                Cursor phonesCursor = contentResolver.query(
+                        Phone.CONTENT_URI,
+                        new String[]{Contacts._ID, Phone.NUMBER},
+                        String.format("%s = ?", Phone.CONTACT_ID),
+                        new String[]{_id},
+                        null
+                );
 
-
-            // Update the progress message
-            updateBarHandler.post(new Runnable() {
-                public void run() {
-                    pDialog.setMessage("Verificando contacto: " + counter++ + "/" + cursor.getCount());
+                // Para cada teléfono encontrado verificamos si es válido y lo guardamos junto al nombre
+                if (phonesCursor != null) {
+                    while (phonesCursor.moveToNext()) {
+                        String phoneNumber = getValidNumber(
+                                phonesCursor.getString(phonesCursor.getColumnIndex(Phone.NUMBER))
+                        );
+                        if (phoneNumber != null)
+                            localContacts.put(phoneNumber, name);
+                    }
+                    phonesCursor.close();
                 }
-            });
-
-            String contact_id = cursor.getString(cursor.getColumnIndex(_ID));
-            String name = cursor.getString(cursor.getColumnIndex(DISPLAY_NAME));
-
-            //This is to read multiple phone numbers associated with the same contactValues
-            Cursor phoneCursor = contentResolver.query(
-                    PhoneCONTENT_URI,
-                    null,
-                    Phone_CONTACT_ID + " = ?",
-                    new String[]{contact_id},
-                    null
-            );
-
-            mapPhoneNumber.clear();
-            if (phoneCursor != null) {
-                while (phoneCursor.moveToNext()) {
-                    phoneNumber = getValidNumber(phoneCursor.getString(phoneCursor.getColumnIndex(NUMBER)));
-                    if (phoneNumber != null)
-                        mapPhoneNumber.put(phoneNumber, name);
-                }
-                phoneCursor.close();
             }
+            contactsCursor.close();
         }
 
-        contactList = new ArrayList<>();
+        return localContacts;
 
-        // Dismiss the progressbar after 500 millisecondds
-        updateBarHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                pDialog.cancel();
-            }
-        }, 500);
+    }
+
+    private void queryPhonesNumbers() {
+
+        if (localContacts == null || localContacts.isEmpty())
+            return;
+
+        final FirebaseDatabase db = FirebaseDatabase.getInstance();
+        final String ownUid = FirebaseAuth.getInstance().getUid();
+
+        if (ownUid == null)
+            return;
+
+        remoteContacts = new HashMap<>();
+
+        for (final String phone : localContacts.keySet()){
+            Log.d(TAG, String.format("Buscando el teléfono %s", phone));
+            db.getReference("phones").child(phone).addListenerForSingleValueEvent(
+                    new ValueEventListener() {
+                        HashMap<String, String> newContact;
+                        @Override
+                        public void onDataChange(DataSnapshot dataSnapshot) {
+                            if (dataSnapshot == null || !dataSnapshot.exists()){
+                                Log.d(TAG, "No hay mensaje para este teléfono");
+                                return;
+                            }
+                            String uid = dataSnapshot.child("uid").getValue(String.class);
+                            Log.d(TAG, "OnDataChange - " + String.format("El teléfono %s es de %s", phone, uid));
+
+                            if (uid == null)
+                                return;
+
+                            newContact = new HashMap<>();
+                            newContact.put("phone", phone);
+                            newContact.put("name", localContacts.get(phone));
+
+                            db.getReference("contacts").child(ownUid).child(uid).setValue(newContact);
+
+                        }
+
+                        @Override
+                        public void onCancelled(DatabaseError databaseError) {
+                            Log.e(TAG, "onCancelled - " + "El telefono " + phone + " devolvió: " + databaseError.toString());
+                        }
+                    }
+            );
+        }
 
     }
 
