@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Agendá2</string>
+    <string name="title_action_bar">Agendá2</string>
+    <string name="groupimage">Imagen Grupo</string>
+    <string name="title_activity_day">Eventos</string>
+</resources>

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.constraint.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -10,13 +11,15 @@
 
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:background="@color/paper_light">
 
         <LinearLayout
             android:id="@+id/groupLayout"
             android:orientation="horizontal"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:background="@color/text_circle">
 
             <ImageView
                 android:id="@+id/groupImage"
@@ -40,17 +43,18 @@
                 android:id="@+id/groupButton"
                 android:layout_width="52dp"
                 android:layout_height="52dp"
-                android:layout_margin="16dp"
+                android:layout_margin="6dp"
                 android:background="@drawable/group"/>
 
         </LinearLayout>
 
         <com.nablanet.agenda2.views.CustomCalendarView
+            android:focusedMonthDateColor="@color/text_circle"
+            android:selectedWeekBackgroundColor="@color/text_circle"
             android:id="@+id/calendarView"
             android:layout_width="match_parent"
-            android:layout_height="256dp"
+            android:layout_height="wrap_content"
             android:layout_below="@id/groupLayout">
-
         </com.nablanet.agenda2.views.CustomCalendarView>
 
     </RelativeLayout>

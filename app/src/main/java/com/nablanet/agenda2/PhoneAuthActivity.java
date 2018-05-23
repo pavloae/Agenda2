@@ -79,7 +79,7 @@ public class PhoneAuthActivity extends AppCompatActivity implements
         mStatusText = findViewById(R.id.status);
         mDetailText = findViewById(R.id.detail);
 
-        mPhoneNumberField = findViewById(R.id.field_phone_number);
+        mPhoneNumberField = findViewById(R.id.phone_tv);
         mVerificationField = findViewById(R.id.field_verification_code);
 
         mStartButton = findViewById(R.id.button_start_verification);

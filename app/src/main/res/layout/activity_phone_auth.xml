@@ -65,7 +65,7 @@
                 android:weightSum="2.0">
 
                 <EditText
-                    android:id="@+id/field_phone_number"
+                    android:id="@+id/phone_tv"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:hint="@string/hint_phone_number"

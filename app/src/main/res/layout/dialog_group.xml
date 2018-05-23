@@ -1,7 +1,10 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
+    android:theme="@style/CustomDialog"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content">
+
     <ImageView
         android:src="@drawable/group"
         android:layout_width="match_parent"
@@ -16,23 +19,76 @@
         android:layout_height="wrap_content">
 
         <ImageView
-            android:layout_width="64dp"
-            android:layout_height="64dp"
-            android:contentDescription="@string/groupimage" />
+            android:id="@+id/group_image"
+            android:layout_width="96dp"
+            android:layout_height="96dp"
+            android:layout_gravity="center_vertical"
+            android:contentDescription="@string/groupimage"
+            android:clickable="true"
+            android:background="@drawable/group"
+            android:focusable="true" />
 
-        <EditText
-            android:id="@+id/username"
-            android:inputType="textCapSentences"
+        <LinearLayout
+            android:orientation="vertical"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:layout_marginLeft="4dp"
-            android:layout_marginRight="4dp"
-            android:layout_marginBottom="4dp"
-            android:hint="@string/nombre_del_grupo" />
+            android:layout_height="wrap_content">
+
+            <EditText
+                android:id="@+id/group_name"
+                android:inputType="textCapSentences"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:layout_marginLeft="4dp"
+                android:layout_marginRight="4dp"
+                android:layout_marginBottom="4dp"
+                android:hint="@string/nombre_del_grupo" />
+
+            <EditText
+                android:id="@+id/group_comment"
+                android:inputType="textCapSentences"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:layout_marginLeft="4dp"
+                android:layout_marginRight="4dp"
+                android:layout_marginBottom="4dp"
+                android:hint="@string/group_comment" />
+
+
+
+        </LinearLayout>
 
     </LinearLayout>
 
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
+        <CheckBox
+            android:id="@+id/group_public"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Público"/>
+
+        <Button
+            android:id="@+id/cancel_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@color/text_circle"
+            android:text="CANCELAR"/>
+
+        <Button
+            android:id="@+id/accept_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@color/text_circle"
+            android:text="ACEPTAR"/>
+
+
+
+    </LinearLayout>
 
 </LinearLayout>
