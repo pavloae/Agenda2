@@ -1,31 +1,34 @@
 package com.nablanet.agenda2;
 
+import android.arch.lifecycle.ViewModelProviders;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.DialogFragment;
-import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
-import android.widget.ImageView;
-import android.widget.ListView;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
+import com.nablanet.agenda2.adapters.GroupsAdapter;
 import com.nablanet.agenda2.dialogs.GroupDialogFragment;
 import com.nablanet.agenda2.interfaces.ImageManagerInterface;
 import com.nablanet.agenda2.pojos.Group;
 import com.nablanet.agenda2.utils.ImageManager;
+import com.nablanet.agenda2.viewmodel.AgendaDBViewModel;
+import com.nablanet.agenda2.viewmodel.FirebaseQueryLiveData.FirebaseObserver;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 public class GroupsActivity extends AppCompatActivity implements GroupDialogFragment.NoticeDialogListener, ImageManagerInterface {
 
@@ -35,13 +38,15 @@ public class GroupsActivity extends AppCompatActivity implements GroupDialogFrag
     private int PICK_IMAGE_REQUEST = 0;
     private int UPLOAD_IMAGE = 1;
 
-    FirebaseDatabase database;
     DatabaseReference myRef;
-    ListView listView;
+
+    public GroupsAdapter groupsAdapter;
 
     FirebaseAuth firebaseAuth;
 
     GroupDialogFragment groupDialogFragment;
+
+    AgendaDBViewModel viewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,11 +55,40 @@ public class GroupsActivity extends AppCompatActivity implements GroupDialogFrag
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        listView = findViewById(R.id.groupsLV);
+        if (getSupportActionBar() != null)
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        firebaseAuth = FirebaseAuth.getInstance();
-        database = FirebaseDatabase.getInstance();
-        myRef = database.getReference("groups");
+        RecyclerView recyclerView = findViewById(R.id.recyclerViewGroups);
+        recyclerView.setHasFixedSize(true);
+        recyclerView.setItemAnimator(null);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        groupsAdapter = new GroupsAdapter(this);
+        groupsAdapter.setHasStableIds(true);
+        recyclerView.setAdapter(groupsAdapter);
+
+        viewModel = ViewModelProviders.of(this).get(AgendaDBViewModel.class);
+        viewModel.getGroups().observe(this, new FirebaseObserver() {
+            @Override
+            public void onChanged(@Nullable DataSnapshot dataSnapshot) {
+
+                if (dataSnapshot == null)
+                    return;
+                for (DataSnapshot group : dataSnapshot.getChildren()){
+                    Group gr = group.getValue(Group.class);
+                    if (gr != null){
+                        gr.setGid(group.getKey());
+                        groupsAdapter.addGroup(gr);
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+
 
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -63,8 +97,6 @@ public class GroupsActivity extends AppCompatActivity implements GroupDialogFrag
                 launchDialog(null);
             }
         });
-        if (getSupportActionBar() != null)
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
     }
 
     private void launchDialog(Group group) {

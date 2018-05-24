@@ -16,21 +16,35 @@ public class User {
     public String name;
     public String comment;
     public String url_image;
-    public boolean share;
 
     public User() {
         // Default constructor required for calls to DataSnapshot.getValue(User.class)
     }
 
-    public User(String name, String comment, String url_image, boolean share) {
+    public User setUid(String uid) {
+        this.uid = uid;
+        return this;
+    }
+
+    public User setName(String name) {
+        this.name = name;
+        return this;
+    }
+
+    public User setComment(String comment) {
+        this.comment = comment;
+        return this;
+    }
+
+    public User setContactValues(Contact contactValues) {
+        this.contactValues = contactValues;
+        return this;
+    }
+
+    public User(String name, String comment, String url_image) {
         this.name = name;
         this.comment = comment;
         this.url_image = url_image;
-        this.share = share;
-    }
-
-    public User(Contact contactValues){
-        this.contactValues = contactValues;
     }
 
     @Exclude

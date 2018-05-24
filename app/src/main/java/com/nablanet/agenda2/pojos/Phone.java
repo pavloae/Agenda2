@@ -15,9 +15,14 @@ public class Phone {
     public Phone() {
     }
 
-    public Phone(String uid, boolean share) {
+    public Phone setUid(String uid) {
         this.uid = uid;
+        return this;
+    }
+
+    public Phone setShare(boolean share) {
         this.share = share;
+        return this;
     }
 
     @Exclude

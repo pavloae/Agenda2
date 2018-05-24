@@ -2,6 +2,7 @@ package com.nablanet.agenda2;
 
 import android.arch.lifecycle.ViewModelProviders;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
@@ -13,13 +14,23 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.nablanet.agenda2.pojos.Phone;
 import com.nablanet.agenda2.pojos.User;
 import com.nablanet.agenda2.viewmodel.AgendaDBViewModel;
 import com.nablanet.agenda2.viewmodel.FirebaseQueryLiveData.FirebaseObserver;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class UserActivity extends AppCompatActivity {
 
@@ -30,6 +41,8 @@ public class UserActivity extends AppCompatActivity {
     TextView phoneNumber;
     CheckBox shareNumber;
 
+    FirebaseUser firebaseUser;
+    DatabaseReference databaseReference;
     User user;
     Phone phone;
     AgendaDBViewModel viewModel;
@@ -45,64 +58,16 @@ public class UserActivity extends AppCompatActivity {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
 
+        firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+        databaseReference = FirebaseDatabase.getInstance().getReference();
+
         userImage = findViewById(R.id.userImage);
         fieldName = findViewById(R.id.field_name);
         fieldComment = findViewById(R.id.field_comment);
         phoneNumber = findViewById(R.id.phone_tv);
         shareNumber = findViewById(R.id.share_box);
 
-        FirebaseAuth firebaseAuth = FirebaseAuth.getInstance();
-
-        if (firebaseAuth.getCurrentUser() != null
-                && firebaseAuth.getCurrentUser().getPhoneNumber() != null)
-            phoneNumber.setText(firebaseAuth.getCurrentUser().getPhoneNumber());
-
-
-        viewModel = ViewModelProviders.of(this).get(AgendaDBViewModel.class);
-
-        viewModel.getOwnUser().observe(this, new FirebaseObserver() {
-            @Override
-            public void onChanged(@Nullable DataSnapshot dataSnapshot) {
-                Log.v(TAG, "getOwnUser().onChanged!!!");
-                if (dataSnapshot != null && dataSnapshot.getValue() != null){
-                    user = dataSnapshot.getValue(User.class);
-                    loadUser();
-                }
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                viewModel.createOwnUser(
-                        new User(
-                                fieldName.getText().toString(),
-                                fieldComment.getText().toString(),
-                                null, // TODO: Implementar la imagen
-                                false
-                        )
-                );
-            }
-        });
-
-        viewModel.getPhone(null).observe(this, new FirebaseObserver() {
-
-            @Override
-            public void onChanged(@Nullable DataSnapshot dataSnapshot) {
-                if (dataSnapshot != null && dataSnapshot.getValue() != null){
-                    phone = dataSnapshot.getValue(Phone.class);
-
-                    if (user != null && phone != null)
-                        user.share = phone.share;
-
-                    loadUser();
-                }
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                viewModel.createOwnPhone();
-            }
-
-        });
+        loadUser();
 
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -116,11 +81,46 @@ public class UserActivity extends AppCompatActivity {
 
     private void loadUser(){
 
-        if (user != null){
-            fieldName.setText(user.name);
-            fieldComment.setText(user.comment);
-            shareNumber.setChecked(user.share);
-        }
+        if (databaseReference == null || firebaseUser == null || firebaseUser.getPhoneNumber() == null)
+            return;
+
+        phoneNumber.setText(firebaseUser.getPhoneNumber());
+
+        databaseReference
+                .child("users")
+                .child(firebaseUser.getUid())
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        user = dataSnapshot.getValue(User.class);
+                        if (user != null){
+                            fieldName.setText(user.name);
+                            fieldComment.setText(user.comment);
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
+                        Log.e(TAG, databaseError.toString());
+                    }
+                });
+
+        databaseReference
+                .child("phones")
+                .child(firebaseUser.getPhoneNumber())
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        phone = dataSnapshot.getValue(Phone.class);
+                        if (phone != null)
+                            shareNumber.setChecked(phone.share);
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
+                        Log.e(TAG, databaseError.toString());
+                    }
+                });
 
     }
 
@@ -131,24 +131,25 @@ public class UserActivity extends AppCompatActivity {
             return;
         }
 
-        if (fieldComment.length() >= 20){
-            fieldComment.setError("El comentario debe tener menos de 20 caracteres");
+        if (fieldComment.length() >= 50){
+            fieldComment.setError("El comentario debe tener menos de 50 caracteres");
             return;
         }
 
-        user = new User(
-                fieldName.getText().toString(),
-                fieldComment.getText().toString(),
-                null, //TODO: Implementar la imagen
-                shareNumber.isChecked()
-        );
+        if (user == null)
+            user = new User().setUid(firebaseUser.getUid());
+        user.setName(fieldName.getText().toString()).setComment(fieldComment.getText().toString());
 
         if (phone == null)
-            phone = new Phone(FirebaseAuth.getInstance().getUid(), false);
+            phone = new Phone().setUid(firebaseUser.getUid());
+        phone.setShare(shareNumber.isChecked());
 
-        phone.share = user.share;
-        viewModel.updateOwnUser(user);
-        viewModel.updateOwnPhone(phone);
+        Map<String, Object> childUpdates = new HashMap<>();
+        childUpdates.put("/users/" + firebaseUser.getUid(), user.toMap());
+        childUpdates.put("/phones/" + firebaseUser.getPhoneNumber(), phone.toMap());
+
+        databaseReference.updateChildren(childUpdates);
+
     }
 
 }

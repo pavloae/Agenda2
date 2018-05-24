@@ -47,9 +47,7 @@ public class ContactsActivity extends AppCompatActivity {
 
     private static final int REQUEST_READ_CONTACTS = 0;
 
-    AgendaDBViewModel viewModel;
     public ContactsAdapter contactsAdapter;
-
 
     HashMap<String, String> localContacts; // <phoneNumber, name>
     HashMap<String, Object> remoteContacts;
@@ -76,8 +74,6 @@ public class ContactsActivity extends AppCompatActivity {
         contactsAdapter = new ContactsAdapter(this);
         contactsAdapter.setHasStableIds(true);
         recyclerView.setAdapter(contactsAdapter);
-
-        viewModel = ViewModelProviders.of(this).get(AgendaDBViewModel.class);
 
         loadRemoteContacts();
 
@@ -116,14 +112,13 @@ public class ContactsActivity extends AppCompatActivity {
                     return;
 
                 Contact contact;
-                User user;
-
-                ArrayList<User> databaseContacts = new ArrayList<>();
                 for (DataSnapshot dataSnapShotChild : dataSnapshot.getChildren()){
                     if ((contact = dataSnapShotChild.getValue(Contact.class)) != null){
-                        user = new User(contact);
-                        user.uid = dataSnapShotChild.getKey();
-                        loadUserProfile(user);
+                        loadUserProfile(
+                                new User()
+                                        .setUid(dataSnapShotChild.getKey())
+                                        .setContactValues(contact)
+                        );
                     }
                 }
             }

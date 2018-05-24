@@ -23,13 +23,6 @@
 
     <include layout="@layout/content_groups" />
 
-    <ListView
-        android:id="@+id/groupsLV"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
-    </ListView>
-
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/fab"
         app:backgroundTint="@color/border_circle"

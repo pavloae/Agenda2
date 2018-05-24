@@ -12,20 +12,20 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.nablanet.agenda2.R;
-import com.nablanet.agenda2.adapters.ContactsAdapter.ItemHolder;
-import com.nablanet.agenda2.pojos.User;
+import com.nablanet.agenda2.adapters.GroupsAdapter.ItemHolder;
+import com.nablanet.agenda2.pojos.Group;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class ContactsAdapter extends RecyclerView.Adapter<ItemHolder> {
+public class GroupsAdapter extends RecyclerView.Adapter<ItemHolder> {
 
     private AppCompatActivity activity;
-    private List<User> users;
+    private List<Group> groups;
 
-    public ContactsAdapter(AppCompatActivity activity) {
+    public GroupsAdapter(AppCompatActivity activity) {
         this.activity = activity;
-        this.users = new ArrayList<>();
+        this.groups = new ArrayList<>();
     }
 
     @NonNull
@@ -37,8 +37,8 @@ public class ContactsAdapter extends RecyclerView.Adapter<ItemHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull ItemHolder holder, int position) {
-        User user = users.get(position);
-        holder.bindItem(user);
+        Group group = groups.get(position);
+        holder.bindItem(group);
     }
 
     @Override
@@ -48,7 +48,7 @@ public class ContactsAdapter extends RecyclerView.Adapter<ItemHolder> {
 
     @Override
     public int getItemCount() {
-        return users.size();
+        return groups.size();
     }
 
     @Override
@@ -56,34 +56,34 @@ public class ContactsAdapter extends RecyclerView.Adapter<ItemHolder> {
         return position;
     }
 
-    public int getPosition(User user){
-        for (User contact : users)
-            if (contact.uid.equals(user.uid))
-                return users.indexOf(contact);
+    public int getPosition(Group group){
+        for (Group groupOnList : groups)
+            if (groupOnList.getGid().equals(group.getGid()))
+                return groups.indexOf(group);
         return -1;
     }
 
-    public void addContact(User user){
-        users.add(0, user);
+    public void addGroup(Group group){
+        groups.add(0, group);
         notifyItemInserted(0);
     }
 
-    public void updateLista(List<User> contacts){
-        this.users = (contacts == null) ? new ArrayList<User>() : contacts;
+    public void updateLista(List<Group> groups){
+        this.groups = (groups == null) ? new ArrayList<Group>() : groups;
         notifyDataSetChanged();
     }
 
-    public List<User> getUsers(){
-        return users;
+    public List<Group> getGroups(){
+        return groups;
     }
 
     class ItemHolder extends ViewHolder implements View.OnClickListener, View.OnLongClickListener {
 
         CardView cardView;
         ImageView imageView;
-        TextView uName, cName, cPhone;
+        TextView groupName, groupComment, groupOwner;
 
-        User user;
+        Group group;
 
         ItemHolder(View view) {
 
@@ -92,22 +92,22 @@ public class ContactsAdapter extends RecyclerView.Adapter<ItemHolder> {
             cardView = view.findViewById(R.id.card_view_compra);
             imageView = view.findViewById(R.id.contact_image);
 
-            cName = view.findViewById(R.id.c_name);
-            cPhone = view.findViewById(R.id.group_owner);
-            uName = view.findViewById(R.id.u_name);
+            groupName = view.findViewById(R.id.group_name);
+            groupComment = view.findViewById(R.id.group_comment);
+            groupOwner = view.findViewById(R.id.group_owner);
 
             view.setOnClickListener(this);
             view.setOnLongClickListener(this);
 
         }
 
-        void bindItem(User user) {
+        void bindItem(Group group) {
 
-            this.user = user;
+            this.group = group;
 
-            cName.setText(user.contactValues.name);
-            cPhone.setText(user.contactValues.phone);
-            uName.setText(String.format("~ %s", user.name));
+            groupName.setText(group.getName());
+            groupComment.setText(group.getComment());
+            groupOwner.setText(group.getOwnerUid());
 
 
         }

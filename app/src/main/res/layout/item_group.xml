@@ -6,7 +6,7 @@
     android:id="@+id/card_view_compra"
     android:theme="@style/AppBaseTheme"
     android:layout_width="match_parent"
-    android:layout_height="52dp"
+    android:layout_height="72dp"
     android:layout_gravity="center"
     android:layout_marginRight="4dp"
     android:layout_marginLeft="4dp"
@@ -19,7 +19,7 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="horizontal"
         android:clickable="false"
         android:longClickable="false"
@@ -45,25 +45,23 @@
             android:layout_height="match_parent">
 
             <TextView
-                android:id="@+id/c_name"
+                android:id="@+id/group_name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical|left"
                 android:textSize="16sp"
-                android:padding="4dp"
-                android:text="Name"
+                android:text="Nombre"
                 tools:ignore="RtlHardcoded" />
 
             <TextView
-                android:id="@+id/u_name"
+                android:id="@+id/group_comment"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical|left"
-                android:layout_alignParentRight="true"
-                android:textSize="12sp"
+                android:layout_below="@id/group_name"
                 android:textStyle="italic"
-                android:padding="4dp"
-                android:text="Name"
+                android:textSize="12sp"
+                android:text="Comentario"
                 tools:ignore="RtlHardcoded" />
 
             <ImageView
@@ -71,18 +69,20 @@
                 android:layout_width="18dp"
                 android:layout_height="18dp"
                 android:layout_alignParentBottom="true"
+                android:layout_below="@id/group_comment"
                 android:padding="2dp"
-                android:src="@drawable/smartphone" />
+                android:src="@drawable/group" />
 
             <TextView
-                android:id="@+id/c_phone"
+                android:id="@+id/group_owner"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_toRightOf="@id/image_phone"
-                android:gravity="left"
+                android:gravity="left|center_vertical"
                 android:textSize="12sp"
-                android:text="+542995390066"
+                android:text="Propietario"
                 android:layout_alignParentBottom="true"
+                android:layout_below="@id/group_comment"
                 android:padding="2dp"
                 tools:ignore="RtlHardcoded" />
 
